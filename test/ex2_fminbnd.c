@@ -1,6 +1,8 @@
 /*
-fminbnd - minimizes a single variable function within a bound given by a and b.
-
+ ============================================================================
+ Name        : optim.c
+ Author      : Rafat
+ ============================================================================
  */
 
 #include <stdio.h>
@@ -8,14 +10,17 @@ fminbnd - minimizes a single variable function within a bound given by a and b.
 #include "../header/optimc.h"
 #include "testfunctions.h"
 
+
 int main(void) {
-	double a,b,oup;
-	
-	a = 0.3;
-	b = 1;
+        double a,b,oup;
 
-	oup = fminbnd(humps,a,b);
-	printf("OUP %g \n",oup);
+        a = 0.3;
+        b = 1;
 
-	return 0;
+        custom_funcuni humps_min = {humps,0};
+
+        oup = fminbnd(&humps_min,a,b);
+        printf("OUP %g \n",oup);
+
+        return 0;
 }

@@ -290,7 +290,7 @@ void linsolve_lower(double *L,int N,double *b,double *x) {
 
 
 
-int hessian_fd(double (*funcpt)(double *,int),double *x,int N,double *dx,double eps,double *f) {
+int hessian_fd(custom_function *funcpt,double *x,int N,double *dx,double eps,double *f) {
 	int i,j,retval;
 	double stepi,stepj,fd,stepmax;
 	double *xi,*xj,*xij;
@@ -327,7 +327,7 @@ int hessian_fd(double (*funcpt)(double *,int),double *x,int N,double *dx,double 
 			xij[j] += stepj;
 			//printf("stepmax %g %g \n",stepi,stepj);
 
-			f[i*N+j] = ((funcpt(xij,N) - funcpt(xi,N)) - (funcpt(xj,N) - funcpt(x,N)))/(stepi * stepj);
+			f[i*N+j] = ((FUNCPT_EVAL(funcpt,xij,N) - FUNCPT_EVAL(funcpt,xi,N)) - (FUNCPT_EVAL(funcpt,xj,N) - FUNCPT_EVAL(funcpt,x,N)))/(stepi * stepj);
 			if (f[i*N+j] >= DBL_MAX || f[i*N+j] <= -DBL_MAX) {
 				printf("Program Exiting as the function value exceeds the maximum double value");
 				return 15;;
@@ -345,7 +345,7 @@ int hessian_fd(double (*funcpt)(double *,int),double *x,int N,double *dx,double 
 	
 }
 
-int hessian_fd2(double (*funcpt)(double *,int),double *x,int N,double *dx,double eps,double *f) {
+int hessian_fd2(custom_function *funcpt,double *x,int N,double *dx,double eps,double *f) {
 	int i,j,step,retval;
 	double fd,temp,ft,fc,temp2,stepmax;
 	double *stepsize,*f2;
@@ -355,7 +355,7 @@ int hessian_fd2(double (*funcpt)(double *,int),double *x,int N,double *dx,double
 	stepsize = (double*) malloc(sizeof(double) *N);
 	f2 = (double*) malloc(sizeof(double) *N);
 	retval = 0;
-	fc = funcpt(x,N);
+	fc = FUNCPT_EVAL(funcpt,x,N);
 	if (fc >= DBL_MAX || fc <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -372,7 +372,7 @@ int hessian_fd2(double (*funcpt)(double *,int),double *x,int N,double *dx,double
 		x[i] += stepsize[i];
 		stepsize[i] = x[i] - temp;
 		
-		f2[i] = funcpt(x,N);
+		f2[i] = FUNCPT_EVAL(funcpt,x,N);
 		if (f2[i] >= DBL_MAX || f2[i] <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -384,7 +384,7 @@ int hessian_fd2(double (*funcpt)(double *,int),double *x,int N,double *dx,double
 		step = i *N;
 		temp = x[i];
 		x[i] += 2*stepsize[i];
-		ft = funcpt(x,N);
+		ft = FUNCPT_EVAL(funcpt, x, N);
 		if (ft >= DBL_MAX || ft <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -394,7 +394,7 @@ int hessian_fd2(double (*funcpt)(double *,int),double *x,int N,double *dx,double
 		for(j = i+1; j < N;++j) {
 			temp2 = x[j];
 			x[j] += stepsize[j];
-			ft = funcpt(x,N);
+			ft = FUNCPT_EVAL(funcpt, x, N);
 			if (ft >= DBL_MAX || ft <= -DBL_MAX) {
 				printf("Program Exiting as the function value exceeds the maximum double value");
 				return 15;
@@ -411,7 +411,7 @@ int hessian_fd2(double (*funcpt)(double *,int),double *x,int N,double *dx,double
 	return retval;
 }
 
-void fdjac(void (*funcgrad)(double *,int,double *),double *x,int N,double *jac,double *dx,double eps2,double *J) {
+void fdjac(custom_gradient *funcgrad, double *x, int N, double *jac, double *dx, double eps2, double *J) {
 	int i,j;
 	double stepsize,temp,stepmax;
 	double *fj;
@@ -430,7 +430,7 @@ void fdjac(void (*funcgrad)(double *,int,double *),double *x,int N,double *jac,d
 		temp = x[j];
 		x[j] += stepsize;
 		stepsize = x[j] - temp;
-		funcgrad(x,N,fj);
+		FUNCGRAD_EVAL(funcgrad, x, N, fj);
 
 		for(i = 0;i < N;++i) {
 			J[i*N+j] = (fj[i] - jac[i]) / stepsize;
@@ -443,7 +443,7 @@ void fdjac(void (*funcgrad)(double *,int,double *),double *x,int N,double *jac,d
 }
 
 
-void hessian_fdg(void (*funcgrad)(double *,int,double *),double *x,int N,double *jac,double *dx,double eps2,double *H) {
+void hessian_fdg(custom_gradient *funcgrad, double *x, int N, double *jac, double *dx, double eps2, double *H) {
 	int i,j,k;
 
 	fdjac(funcgrad,x,N,jac,dx,eps2,H);
@@ -456,7 +456,7 @@ void hessian_fdg(void (*funcgrad)(double *,int,double *),double *x,int N,double 
 	}
 }
 
-int hessian_opt(double (*funcpt)(double *,int),void (*funcgrad)(double *,int,double *),double *x,int N,double *jac,
+int hessian_opt(custom_function *funcpt, custom_gradient *funcgrad, double *x, int N, double *jac,
 		double *dx,double eps,double eps2,double *H) {
 	int retval;
 	retval = 0;
@@ -471,8 +471,8 @@ int hessian_opt(double (*funcpt)(double *,int),void (*funcgrad)(double *,int,dou
 	return retval;
 }
 
-int lnsrch(double (*funcpt)(double *,int),double *xi,double *jac,double *p,int N,double * dx,double maxstep,double stol,double *x) {
-	int retval,i;
+int lnsrch(custom_function *funcpt,double *xi,double *jac,double *p,int N,double * dx,double maxstep,double stol,double *x) {
+	int retval,i,iter,MAXITER;
 	double alpha,lambda,lambdamin,funcf,funci,lambdaprev,lambdatemp,funcprev;
 	double lambda2,lambdaprev2,ll,den,rell,nlen;
 	double *slopei,*temp1,*temp2,*ab,*rcheck,*pl;
@@ -487,13 +487,14 @@ int lnsrch(double (*funcpt)(double *,int),double *xi,double *jac,double *p,int N
 	alpha = 1e-04;
 	lambda = 1.0;
 	nlen = 0.0;
+	MAXITER = 1000;
 	funcprev = 1.0; // funcprev and lambdaprev are initialized to suppress warnings
 	lambdaprev = 1.0; // These values are not used as the program sets the value later on.
 	for(i = 0; i < N;++i) {
 		nlen += dx[i] * p[i] * dx[i] * p[i];
 	}
 	nlen = sqrt(nlen);
-	
+	iter = 0;
 	if (nlen > maxstep) {
 		scale(p,1,N,maxstep/nlen);
 		nlen = maxstep;
@@ -514,17 +515,18 @@ int lnsrch(double (*funcpt)(double *,int),double *xi,double *jac,double *p,int N
 	lambdamin = stol/rell;
 	
 	//mdisplay(p,1,N);
-	funci = funcpt(xi,N);
+	funci = FUNCPT_EVAL(funcpt, xi, N);
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
 	}
-	while (retval > 1) {
+	while (retval > 1 && iter < MAXITER) {
+		iter++;
 		for(i = 0; i < N;++i) {
 			pl[i] = p[i] * lambda;
 		}
 		madd(xi,pl,x,1,N);
-		funcf = funcpt(x,N);
+		funcf = FUNCPT_EVAL(funcpt, x, N);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -582,7 +584,7 @@ int lnsrch(double (*funcpt)(double *,int),double *xi,double *jac,double *p,int N
 	return retval;
 }
 
-int lnsrchmod(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,double *jac,double *p,int N,double * dx,double maxstep,
+int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, double *jac, double *p, int N, double * dx, double maxstep,
 		double eps2,double stol,double *x,double *jacf) {
 	int retval,i,gfdcode;
 	double alpha,lambda,lambdamin,funcf,funci,lambdaprev,lambdatemp,funcprev;
@@ -631,7 +633,7 @@ int lnsrchmod(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doubl
 	
 	lambdamin = stol/rell;
 	
-	funci = funcpt(xi,N);
+	funci = FUNCPT_EVAL(funcpt, xi, N);
 	
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
@@ -642,7 +644,7 @@ int lnsrchmod(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doubl
 			pl[i] = p[i] * lambda;
 		}
 		madd(xi,pl,x,1,N);
-		funcf = funcpt(x,N);
+		funcf = FUNCPT_EVAL(funcpt, x, N);
 		printf("%g lmax %g %g \n",lambda,funcf,funci + alpha *lambda *slopei[0]);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
@@ -672,7 +674,7 @@ int lnsrchmod(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doubl
 								pl[i] = p[i] * lambda;
 							}
 							madd(xi,pl,x,1,N);
-							funcf = funcpt(x,N);
+							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
 								return 15;
@@ -715,7 +717,7 @@ int lnsrchmod(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doubl
 								pl[i] = p[i] * lambda;
 							}
 							madd(xi,pl,x,1,N);
-							funcf = funcpt(x,N);
+							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
 								return 15;
@@ -804,7 +806,7 @@ int lnsrchmod(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doubl
 	return retval;
 }
 
-int lnsrchcg(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,double *jac,double *p,int N,double * dx,double maxstep,
+int lnsrchcg(custom_function *funcpt, custom_gradient *funcgrad, double *xi, double *jac, double *p, int N, double * dx, double maxstep,
 	double eps2,double stol,double *x,double *jacf) {
 	int retval,i,gfdcode;
 	double alpha,lambda,lambdamin,funcf,funci,lambdaprev,lambdatemp,funcprev;
@@ -853,7 +855,7 @@ int lnsrchcg(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 	
 	lambdamin = stol/rell;
 	
-	funci = funcpt(xi,N);
+	funci = FUNCPT_EVAL(funcpt, xi, N);
 	
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
@@ -864,7 +866,7 @@ int lnsrchcg(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 			pl[i] = p[i] * lambda;
 		}
 		madd(xi,pl,x,1,N);
-		funcf = funcpt(x,N);
+		funcf = FUNCPT_EVAL(funcpt, x, N);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -890,7 +892,7 @@ int lnsrchcg(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 								pl[i] = p[i] * lambda;
 							}
 							madd(xi,pl,x,1,N);
-							funcf = funcpt(x,N);
+							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
 								return 15;
@@ -929,7 +931,7 @@ int lnsrchcg(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 								pl[i] = p[i] * lambda;
 							}
 							madd(xi,pl,x,1,N);
-							funcf = funcpt(x,N);
+							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
 								return 15;
@@ -1070,12 +1072,12 @@ int stopcheck(double fx,int N,double *xc,double *xf,double *jac,double *dx,doubl
 	return rcode;
 }
 
-int newton_min_func(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,int N,double *dx,double fsval,int MAXITER,
+int newton_min_func(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, double *dx, double fsval, double maxstep, int MAXITER,
 		int *niter,double eps,double gtol,double stol,double *xf) {
 	int rcode,gfdcode,hdcode;
 	int i,siter,retval;
 	double dt1,dt2,eps2;
-	double fx,num,den,stop0,maxstep,fxf;
+	double fx,num,den,stop0,fxf;
 	double *jac,*hess,*scheck,*xc,*L,*step;
 	
 	jac = (double*) malloc(sizeof(double) *N);
@@ -1112,7 +1114,7 @@ int newton_min_func(double (*funcpt)(double *,int),void(*funcgrad)(double *, int
 		xi[i] *= dx[i];
 		dx[i] = 1.0 / dx[i];
 	}
-	fx = funcpt(xi,N);
+	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -1124,20 +1126,25 @@ int newton_min_func(double (*funcpt)(double *,int),void(*funcgrad)(double *, int
 	}
 	
 	
-	maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
-	dt1 = dt2 = 0.0;
-	for(i = 0; i < N;++i) {
-		dt1 += dx[i] * dx[i];
-		dt2 += dx[i] * xi[i] * dx[i] * xi[i];
-	}
+	//maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
 
-	dt1 = sqrt(dt1);
-	dt2 = sqrt(dt2);
-	
-	if (dt1 > dt2) {
-		maxstep *= dt1;
-	} else {
-		maxstep *= dt2;
+	if (maxstep <= 0.0) {
+		maxstep = 1000.0;
+		dt1 = dt2 = 0.0;
+		for (i = 0; i < N; ++i) {
+			dt1 += dx[i] * dx[i];
+			dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		}
+
+		dt1 = sqrt(dt1);
+		dt2 = sqrt(dt2);
+
+		if (dt1 > dt2) {
+			maxstep *= dt1;
+		}
+		else {
+			maxstep *= dt2;
+		}
 	}
 	
 	//printf("dt1 dt2 %g \n", maxstep);
@@ -1188,7 +1195,7 @@ int newton_min_func(double (*funcpt)(double *,int),void(*funcgrad)(double *, int
 
 		scale(jac,1,N,-1.0);
 		retval = lnsrch(funcpt,xc,jac,step,N,dx,maxstep,stol,xf); 
-		fxf = funcpt(xf,N);
+		fxf = FUNCPT_EVAL(funcpt, xf, N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -1229,7 +1236,7 @@ int newton_min_func(double (*funcpt)(double *,int),void(*funcgrad)(double *, int
 }
 
 
-int trsrch(double (*funcpt)(double *,int),double *xi,double *jac,double *sN,int N,double * dx,double maxstep,
+int trsrch(custom_function *funcpt,double *xi,double *jac,double *sN,int N,double * dx,double maxstep,
 		int iter,double *L,double *hess,double stol,double *ioval,double eps,double *x) {
 	int retval,i,j,method;		
 	double alpha,beta;
@@ -1415,7 +1422,7 @@ void trstep(double *jac,double *sN,int N,double * dx,double *L,double *hess,doub
 	free(temp2);
 }
 	
-int trupdate(double (*funcpt)(double *,int),double *xi,double *jac,double *step,int N,double * dx,double maxstep,
+int trupdate(custom_function *funcpt,double *xi,double *jac,double *step,int N,double * dx,double maxstep,
 		int retcode,double *L,double *hess,double stol,int method,double *ioval,double *xprev,double *funcprev,double *x) {
 			
 	int retval;	
@@ -1445,7 +1452,7 @@ int trupdate(double (*funcpt)(double *,int),double *xi,double *jac,double *step,
 	nlen = sqrt(nlen);
 	
 	
-	funci = funcpt(xi,N);
+	funci = FUNCPT_EVAL(funcpt, xi, N);
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -1453,7 +1460,7 @@ int trupdate(double (*funcpt)(double *,int),double *xi,double *jac,double *step,
 	
 	madd(xi,step,x,1,N);
 	
-	funcf = funcpt(x,N);
+	funcf = FUNCPT_EVAL(funcpt, x, N);
 	if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -1560,7 +1567,7 @@ int trupdate(double (*funcpt)(double *,int),double *xi,double *jac,double *step,
 		
 }
 
-int newton_min_trust(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,int N,double *dx,double fsval,double delta,
+int newton_min_trust(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, double *dx, double fsval, double delta,
 		int method,int MAXITER,int *niter,double eps,double gtol,double stol,double *xf) {
 	int rcode,iter,gfdcode,hdcode;
 	int i,siter,retval,fdiff;
@@ -1607,7 +1614,7 @@ int newton_min_trust(double (*funcpt)(double *,int),void(*funcgrad)(double *, in
 		xi[i] *= dx[i];
 		dx[i] = 1.0 / dx[i];
 	}
-	fx = funcpt(xi,N);
+	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -1694,7 +1701,7 @@ int newton_min_trust(double (*funcpt)(double *,int),void(*funcgrad)(double *, in
 			exit(1);
 		}
 		
-		fxf = funcpt(xf,N);
+		fxf = FUNCPT_EVAL(funcpt, xf, N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -1735,7 +1742,7 @@ int newton_min_trust(double (*funcpt)(double *,int),void(*funcgrad)(double *, in
 	return rcode;
 }
 
-int trsrch_ddl(double (*funcpt)(double *,int),double *xi,double *jac,double *sN,int N,double * dx,double maxstep,
+int trsrch_ddl(custom_function *funcpt,double *xi,double *jac,double *sN,int N,double * dx,double maxstep,
 		int iter,double *L,double *hess,double stol,double *ioval,double *x) {
 	int retval,i,method;		
 	double nlen,funcprev;

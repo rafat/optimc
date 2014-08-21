@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fsval,int MAXITER,int *niter,
+int nel_min(custom_function *funcpt,double *xc,int N,double *dx,double fsval,int MAXITER,int *niter,
 		double eps,double *xf);
 
 #ifdef __cplusplus

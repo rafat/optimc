@@ -23,7 +23,7 @@
 
  */
 
-int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fsval,int MAXITER,int *niter,
+int nel_min(custom_function *funcpt,double *xc,int N,double *dx,double fsval,int MAXITER,int *niter,
 		double eps,double *xf) {
 	int rcode,NN,i,j,ct,ctl;
 	int ihi,ilo,L,siter;
@@ -66,7 +66,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 			P[ct + i] = xi[i];
 		}
 
-		fn = funcpt(xi,N);
+		fn = FUNCPT_EVAL(funcpt,xi,N);
 		Y[N] = fn;
 
 
@@ -76,7 +76,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 			for (j = 0; j < N;++j) {
 				P[ct + j] = xi[j];
 			}
-			fn = funcpt(xi,N);
+			fn = FUNCPT_EVAL(funcpt, xi, N);
 			Y[i] = fn;
 			xi[i] -= dx[i] * del;
 		}
@@ -133,13 +133,13 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 			for (i = 0; i < N;++i) {
 				PS[i] = (1.0 + rcoeff) * PB[i] - rcoeff * P[ct+i];
 			}
-			ys = funcpt(PS,N);
+			ys = FUNCPT_EVAL(funcpt, PS, N);
 
 			if (ys < ylo) {
 				for (i = 0; i < N;++i) {
 					PSS[i] = ecoeff * PS[i] + (1.0 - ecoeff) * PB[i];
 				}
-				yss = funcpt(PSS,N);
+				yss = FUNCPT_EVAL(funcpt, PSS, N);
 
 				if (yss < ys) {
 					for(i = 0; i < N;++i) {
@@ -172,7 +172,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 					for (i = 0; i < N;++i) {
 						PSS[i] = ccoeff * P[ct + i] + (1.0 - ccoeff) * PB[i];
 					}
-					yss = funcpt(PSS,N);
+					yss = FUNCPT_EVAL(funcpt, PSS, N);
 
 					if (yss <= Y[ihi]) {
 						for(i = 0; i < N;++i) {
@@ -189,7 +189,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 								P[ct + j] = 0.5 * (P[ct + j] + PL[j]);
 								PM[j] = P[ct + j];
 							}
-							Y[i] = funcpt(PM,N);
+							Y[i] = FUNCPT_EVAL(funcpt, PM, N);
 
 						}
 						ylo = Y[0];
@@ -214,7 +214,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 					for (i = 0; i < N;++i) {
 						PSS[i] = ccoeff * P[ct + i] + (1.0 - ccoeff) * PB[i];
 					}
-					yss = funcpt(PSS,N);
+					yss = FUNCPT_EVAL(funcpt, PSS, N);
 
 					if (yss <= ys) {
 						ct = ihi * N;
@@ -275,7 +275,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 		for (i = 0; i < N;++i) {
 			del = dx[i] * dval;
 			xmin[i] += del;
-			fn = funcpt(xmin,N);
+			fn = FUNCPT_EVAL(funcpt, xmin, N);
 			if (fn < ynl) {
 				ctl = 0;
 				break;
@@ -283,7 +283,7 @@ int nel_min(double (*funcpt)(double *,int),double *xc,int N,double *dx,double fs
 				ctl++;
 			}
 			xmin[i] = xmin[i] - 2 * del;
-			fn = funcpt(xmin,N);
+			fn = FUNCPT_EVAL(funcpt, xmin, N);
 			if (fn < ynl) {
 				ctl = 0;
 				break;

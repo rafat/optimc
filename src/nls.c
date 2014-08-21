@@ -73,7 +73,7 @@ double enorm(double *x, int N) {
 
 void qrfac(double *A, int M, int N, int lda, int pivot, int *ipvt, int lipvt,double *rdiag, double *acnorm,double eps) {
 	int i,j,jp1,k,kmax,minmn,t;
-    double ajnorm,epsmch,one,p05,sum,temp,zero,temp2;
+    double ajnorm,epsmch,one,p05,sum,temp,zero,temp2,pmaxval;
     double *AT,*wa,*wa2;
 
  /*
@@ -210,7 +210,8 @@ void qrfac(double *A, int M, int N, int lda, int pivot, int *ipvt, int lipvt,dou
     				// Breakpoint 2
     				if (pivot == 1 && rdiag[k] != zero) {
     					temp = A[j*N+k] / rdiag[k];
-    					rdiag[k] = rdiag[k]*sqrt(pmax(zero,one-temp*temp));
+						pmaxval = pmax(zero, one - temp*temp);
+    					rdiag[k] = rdiag[k]*sqrt(pmaxval);
     					temp2 = (p05*(rdiag[k]/wa[k]));
     					temp2 = temp2 * temp2;
     					if (temp2 <= epsmch) {
@@ -391,7 +392,7 @@ void qrsolv(double *r,int ldr,int N,int *ipvt,double *diag,double *qtb,double *x
 	free(wa);
 }
 
-void fdjac2(void (*funcmult)(double *,int,int,double *),double *x,int M, int N,double *fvec,double *fjac,int ldfjac,
+void fdjac2(custom_funcmult *funcmult, double *x, int M, int N, double *fvec, double *fjac, int ldfjac,
 		double epsfcn,double eps) {
 	int i,j;
 	double epsmch,h,temp,zero;
@@ -410,7 +411,7 @@ void fdjac2(void (*funcmult)(double *,int,int,double *),double *x,int M, int N,d
         	h = eps;
         }
         x[j] = temp + h;
-        funcmult(x,M,N,wa);
+        FUNCMULT_EVAL(funcmult,x,M,N,wa);
         x[j] = temp;
         for(i = 0; i < M;++i) {
         	fjac[i*N+j] = (wa[i] - fvec[i])/h;
@@ -652,7 +653,7 @@ void lmpar(double *r,int ldr,int N,int *ipvt,double *diag,double *qtb,double del
 	free(wa2);
 }
 
-int lmder(void (*funcmult)(double *,int,int,double *),void(*jacobian)(double *, int,int,double *),double *x,int M, int N,
+int lmder(custom_funcmult *funcmult, custom_jacobian *jacobian, double *x, int M, int N,
 		double *fvec,double *fjac,int ldfjac,int maxfev,double *diag,int mode,double factor,int nprint,
 		double eps,double ftol,double gtol,double xtol,int *nfev,int *njev,int *ipvt, double *qtf) {
 	int info;
@@ -817,7 +818,7 @@ c         the first n elements of the vector (q transpose)*fvec.
     //     evaluate the function at the starting point
     //     and calculate its norm.
 
-    funcmult(x,M,N,fvec);
+    FUNCMULT_EVAL(funcmult,x,M,N,fvec);
     *nfev= 1;
     fnorm = enorm(fvec,M);
 
@@ -831,7 +832,7 @@ c         the first n elements of the vector (q transpose)*fvec.
     while(1) {
     	//        calculate the jacobian matrix.
     	ratio = zero;
-    	jacobian(x,M,N,fjac);
+    	JACOBIAN_EVAL(jacobian,x,M,N,fjac);
     	*njev = *njev +1;
 
     	//        compute the qr factorization of the jacobian.
@@ -937,7 +938,7 @@ c         the first n elements of the vector (q transpose)*fvec.
     		}
     		//           evaluate the function at x + p and calculate its norm.
 
-    		funcmult(wa2,M,N,wa4);
+    		FUNCMULT_EVAL(funcmult,wa2,M,N,wa4);
     		*nfev = *nfev + 1;
     		fnorm1 = enorm(wa4,M);
 
@@ -1054,7 +1055,7 @@ c         the first n elements of the vector (q transpose)*fvec.
 	return info;
 }
 
-int lmdif(void (*funcmult)(double *,int,int,double *),double *x,int M, int N,double *fvec,double *fjac,int ldfjac,
+int lmdif(custom_funcmult *funcmult, double *x, int M, int N, double *fvec, double *fjac, int ldfjac,
 		int maxfev,double *diag,int mode,double factor,int nprint,double eps,double epsfcn,double ftol,double gtol,
 		double xtol,int *nfev,int *njev,int *ipvt, double *qtf) {
 	int info;
@@ -1228,7 +1229,7 @@ c         the first n elements of the vector (q transpose)*fvec.
     //     evaluate the function at the starting point
     //     and calculate its norm.
 
-    funcmult(x,M,N,fvec);
+    FUNCMULT_EVAL(funcmult,x,M,N,fvec);
     *nfev= 1;
     fnorm = enorm(fvec,M);
 
@@ -1349,7 +1350,7 @@ c         the first n elements of the vector (q transpose)*fvec.
     		}
     		//           evaluate the function at x + p and calculate its norm.
 
-    		funcmult(wa2,M,N,wa4);
+    		FUNCMULT_EVAL(funcmult,wa2,M,N,wa4);
     		*nfev = *nfev + 1;
     		fnorm1 = enorm(wa4,M);
 

@@ -58,7 +58,7 @@ double l2norm(double *vec, int N) {
 	return l2;
 }
 
-int grad_fd(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *), double *x, int N, double *dx,
+int grad_fd(custom_function *funcpt, custom_gradient *funcgrad, double *x, int N, double *dx,
 		double eps2, double *f) {
 	int retval;
 	retval = 0;
@@ -67,14 +67,14 @@ int grad_fd(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double 
 		retval = grad_calc(funcpt,x,N,dx,eps2,f);
 	} else {
 		//printf("Analytic gradient \n");
-		funcgrad(x,N,f);
+		FUNCGRAD_EVAL(funcgrad,x,N,f);
 	}
 
 	return retval;
 
 }
 
-int grad_cd(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *), double *x, int N, double *dx,
+int grad_cd(custom_function *funcpt, custom_gradient *funcgrad, double *x, int N, double *dx,
 		double eps3, double *f) {
 	int retval;
 	retval = 0;
@@ -83,13 +83,13 @@ int grad_cd(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double 
 		retval = grad_calc2(funcpt,x,N,dx,eps3,f);
 	} else {
 		//printf("Analytic gradient \n");
-		funcgrad(x,N,f);
+		FUNCGRAD_EVAL(funcgrad,x,N,f);
 	}
 	return retval;
 
 }
 
-int grad_calc2(double(*funcpt)(double *, int), double *x, int N, double *dx, double eps3, double *f) {
+int grad_calc2(custom_function *funcpt, double *x, int N, double *dx, double eps3, double *f) {
 	int j,retval;
 	double stepsize,stepmax,temp;
 	double fp,fm;
@@ -108,13 +108,13 @@ int grad_calc2(double(*funcpt)(double *, int), double *x, int N, double *dx, dou
 		temp = x[j];
 		x[j] += stepsize;
 		stepsize = x[j] - temp;
-		fp = funcpt(x,N);
+		fp = FUNCPT_EVAL(funcpt,x,N);
 		if (fp >= DBL_MAX || fp <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
 		}
 		x[j] = temp - stepsize;
-		fm = funcpt(x,N);
+		fm = FUNCPT_EVAL(funcpt,x,N);
 		if (fm >= DBL_MAX || fm <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -126,7 +126,7 @@ int grad_calc2(double(*funcpt)(double *, int), double *x, int N, double *dx, dou
 	return retval;
 }
 
-int grad_calc(double(*funcpt)(double *, int), double *x, int N, double *dx, double eps2, double *f) {
+int grad_calc(custom_function *funcpt, double *x, int N, double *dx, double eps2, double *f) {
 	int i, j,retval;
 	double step, fd, stepmax;
 	double *xi;
@@ -147,7 +147,7 @@ int grad_calc(double(*funcpt)(double *, int), double *x, int N, double *dx, doub
 			xi[j] = x[j];
 		}
 		xi[i] += step;
-		f[i] = (funcpt(xi, N) - funcpt(x, N)) / step;
+		f[i] = (FUNCPT_EVAL(funcpt, xi, N) - FUNCPT_EVAL(funcpt, x, N)) / step;
 		if (f[i] >= DBL_MAX || f[i] <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -498,7 +498,7 @@ int cstep(double *stx,double *fx,double *dx,double *sty,double *fy,double *dy,do
 	return info;
 }
 
-int cvsrch(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *), double *x, double *f, double *g, double *stp, double *s, int N, double *dx, double maxstep,
+int cvsrch(custom_function *funcpt, custom_gradient *funcgrad, double *x, double *f, double *g, double *stp, double *s, int N, double *dx, double maxstep,
 	int MAXITER,double eps2,double ftol, double gtol, double xtol) {
 	int info,i,siter,nfev;
 	int infoc, j, brackt, stage1;
@@ -604,7 +604,7 @@ int cvsrch(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *
 			x[j] = wa[j] + *stp * s[j];
 		}
 
-		*f = funcpt(x, N);
+		*f = FUNCPT_EVAL(funcpt,x, N);
 		if (*f >= DBL_MAX || *f <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -693,7 +693,7 @@ int cvsrch(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *
 	return info;
 }
 
-int lnsrchmt(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *), double *xi,double *f, double *jac,double *alpha, double *p, int N, double *dx, double maxstep, int MAXITER,
+int lnsrchmt(custom_function *funcpt, custom_gradient *funcgrad, double *xi, double *f, double *jac, double *alpha, double *p, int N, double *dx, double maxstep, int MAXITER,
 		double eps2,double ftol, double gtol, double xtol, double *x) {
 	int i,retval,info;
 

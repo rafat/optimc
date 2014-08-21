@@ -32,10 +32,6 @@ int lls_svd(double *Ai,double *bi,int M,int N,double *xo);
 
 int lls_svd2(double *Ai,double *bi,int M,int N,double *xo);
 
-int svd2( int m, int n, int withu, int withv, double eps, double tol,double a[4][3], double *q, double u[4][3], double v[3][3] );
-
-void svd_csa(double A[4][3], int m,int n, double* w, double V[3][3]);
-
 #ifdef __cplusplus
 }
 #endif

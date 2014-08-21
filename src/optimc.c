@@ -33,6 +33,7 @@ opt_object opt_init(int N) {
 
 	obj->Iter = 0;
 	obj->Method = 0;
+	obj->maxstep = -1.0;
 	strcpy(obj->MethodName,"Nelder-Mead");
 	obj->objfunc = 0.0;
 	for (i = 0; i < N;++i) {
@@ -58,6 +59,10 @@ void summary(opt_object obj) {
 
 void setMaxIter(opt_object obj,int MaxIter) {
 	obj->MaxIter = MaxIter;
+}
+
+void setMaxStep(opt_object obj, double maxstep) {
+	obj->maxstep = maxstep;
 }
 
 void setTOL(opt_object obj,double gtol,double stol,double ftol,double xtol) {
@@ -108,7 +113,7 @@ void setnlsTOL(nls_object obj,double gtol,double ftol,double xtol) {
 	obj->xtol = xtol;
 }
 
-int fminsearch(double (*funcpt)(double *,int),int N,double *xi,double *xf) {
+int fminsearch(custom_function *funcpt,int N,double *xi,double *xf) {
 	int i,retval,MAXITER,niter;
 	double fsval,eps;
 	double *dx;
@@ -148,7 +153,7 @@ static int mvalue(int N) {
 	return mval;
 }
 
-int fminunc(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),int N,double *xi,int method,double *xf) {
+int fminunc(custom_function *funcpt, custom_gradient *funcgrad, int N, double *xi,double maxstep, int method,double *xf) {
 	int i,retval,MAXITER,niter,m;
 	double fsval,eps,gtol,stol,ftol,xtol,delta;
 	double *dx;
@@ -199,7 +204,7 @@ int fminunc(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double 
 		if (MAXITER < 1000) {
 			MAXITER = 1000;
 		}
-		retval = newton_min_func(funcpt,funcgrad,xi,N,dx,fsval,MAXITER,&niter,eps,gtol,stol,xf);
+		retval = newton_min_func(funcpt,funcgrad,xi,N,dx,fsval,maxstep,MAXITER,&niter,eps,gtol,stol,xf);
 	} else if (method == 2) {
 		gtol = pow(eps,1.0/3.0);
 		stol = gtol * gtol;
@@ -221,14 +226,14 @@ int fminunc(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double 
 		if (MAXITER < 1000) {
 			MAXITER = 1000;
 		}
-		retval = conjgrad_min_lin(funcpt,funcgrad,xi,N,dx,MAXITER,&niter,eps,gtol,ftol,xtol,xf);
+		retval = conjgrad_min_lin(funcpt,funcgrad,xi,N,dx,maxstep,MAXITER,&niter,eps,gtol,ftol,xtol,xf);
 	} else if (method == 5) {
 		gtol = pow(eps,1.0/3.0);
 		stol = gtol * gtol;
 		if (MAXITER < 1000) {
 			MAXITER = 1000;
 		}
-		retval = bfgs_min(funcpt,funcgrad,xi,N,dx,fsval,MAXITER,&niter,eps,gtol,stol,xf);
+		retval = bfgs_min(funcpt,funcgrad,xi,N,dx,fsval,maxstep,MAXITER,&niter,eps,gtol,stol,xf);
 	} else if (method == 6) {
 		gtol = pow(eps,1.0/3.0);
 		ftol = gtol * gtol;
@@ -237,7 +242,7 @@ int fminunc(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double 
 			MAXITER = 1000;
 		}
 		m = mvalue(N);
-		retval = bfgs_l_min(funcpt,funcgrad,xi,N,m,dx,fsval,MAXITER,&niter,eps,gtol,ftol,xtol,xf);
+		retval = bfgs_l_min(funcpt,funcgrad,xi,N,m,dx,fsval,maxstep,MAXITER,&niter,eps,gtol,ftol,xtol,xf);
 	} else {
 		printf("Method Value should be one of 0,1,2,3,4,5 or 6. See Documentation. \n");
 		exit(1);
@@ -249,19 +254,19 @@ int fminunc(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double 
 	return retval;
 }
 
-double fminbnd(double (*funcpt)(double),double a, double b) {
+double fminbnd(custom_funcuni *funcuni,double a, double b) {
 	double x,t,eps;
 
 	t = 1e-012;
 	eps = macheps();
 
-	brent_local_min(funcpt,a,b,t,eps,&x);
+	brent_local_min(funcuni,a,b,t,eps,&x);
 
 	return x;
 }
 
-int fminnewt(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),int N,double *xi,
-	     double delta,double *dx,double fsval,int method,double *xf) {
+int fminnewt(custom_function *funcpt, custom_gradient *funcgrad, int N, double *xi,
+	     double delta,double *dx,double fsval,double maxstep, int method,double *xf) {
 	int retval;
 	int MAXITER,niter;
 	double eps,gtol,stol;
@@ -308,7 +313,7 @@ int fminnewt(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 		if (MAXITER < 1000) {
 			MAXITER = 1000;
 		}
-		retval = newton_min_func(funcpt,funcgrad,xi,N,dx,fsval,MAXITER,&niter,eps,gtol,stol,xf);
+		retval = newton_min_func(funcpt,funcgrad,xi,N,dx,fsval,maxstep,MAXITER,&niter,eps,gtol,stol,xf);
 	} else if (method == 2) {
 		gtol = pow(eps,1.0/3.0);
 		stol = gtol * gtol;
@@ -332,7 +337,7 @@ int fminnewt(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 	return retval;
 }
 
-void optimize(opt_object obj,double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),int N,double *xi,
+void optimize(opt_object obj, custom_function *funcpt, custom_gradient *funcgrad, int N, double *xi,
 		int method) {
 	int i,m;
 	double fsval,delta;
@@ -387,7 +392,7 @@ void optimize(opt_object obj,double (*funcpt)(double *,int),void(*funcgrad)(doub
 		obj->retval = nel_min(funcpt,xi,obj->N,dx,fsval,obj->MaxIter,&obj->Iter,obj->eps,obj->xopt);
 	} else if (method == 1) {
 		strcpy(obj->MethodName,"Newton Line Search");
-		obj->retval = newton_min_func(funcpt,funcgrad,xi,obj->N,dx,fsval,obj->MaxIter,&obj->Iter,obj->eps,obj->gtol,
+		obj->retval = newton_min_func(funcpt,funcgrad,xi,obj->N,dx,fsval,obj->maxstep,obj->MaxIter,&obj->Iter,obj->eps,obj->gtol,
 				obj->stol,obj->xopt);
 	} else if (method == 2) {
 		strcpy(obj->MethodName,"Newton Trust Region - Hook Step");
@@ -402,17 +407,17 @@ void optimize(opt_object obj,double (*funcpt)(double *,int),void(*funcgrad)(doub
 	} else if (method == 4) {
 		strcpy(obj->MethodName,"Conjugate Gradient");
 
-		obj->retval = conjgrad_min_lin(funcpt,funcgrad,xi,obj->N,dx,obj->MaxIter,&obj->Iter,obj->eps,obj->gtol,
+		obj->retval = conjgrad_min_lin(funcpt, funcgrad, xi, obj->N, dx, obj->maxstep, obj->MaxIter, &obj->Iter, obj->eps, obj->gtol,
 				obj->ftol,obj->xtol,obj->xopt);
 	} else if (method == 5) {
 		strcpy(obj->MethodName,"BFGS");
 
-		obj->retval = bfgs_min(funcpt,funcgrad,xi,obj->N,dx,fsval,obj->MaxIter,&obj->Iter,obj->eps,obj->gtol,
+		obj->retval = bfgs_min(funcpt, funcgrad, xi, obj->N, dx, fsval, obj->maxstep, obj->MaxIter, &obj->Iter, obj->eps, obj->gtol,
 				obj->stol,obj->xopt);
 	} else if (method == 6) {
 		strcpy(obj->MethodName,"Limited Memory BFGS");
 		m = mvalue(N);
-		obj->retval = bfgs_l_min(funcpt,funcgrad,xi,obj->N,m,dx,fsval,obj->MaxIter,&obj->Iter,obj->eps,
+		obj->retval = bfgs_l_min(funcpt, funcgrad, xi, obj->N, m, dx, fsval, obj->maxstep, obj->MaxIter, &obj->Iter, obj->eps,
 				obj->gtol,obj->ftol,obj->xtol,obj->xopt);
 	} else {
 		strcpy(obj->MethodName,"NULL");
@@ -420,7 +425,7 @@ void optimize(opt_object obj,double (*funcpt)(double *,int),void(*funcgrad)(doub
 		exit(1);
 	}
 
-	obj->objfunc = funcpt(obj->xopt,obj->N);
+	obj->objfunc = FUNCPT_EVAL(funcpt,obj->xopt,obj->N);
 
 	free(dx);
 }
@@ -431,7 +436,7 @@ void free_opt(opt_object object) {
 
 }
 
-int levmar(void (*funcmult)(double *,int,int,double *),void(*jacobian)(double *, int,int,double *),
+int levmar(custom_funcmult *funcmult, custom_jacobian *jacobian,
 		double *xi,int M, int N,double *xf) {
 	int info,i;
 	double *fvec,*fjac,*diag,*qtf;
@@ -478,7 +483,7 @@ int levmar(void (*funcmult)(double *,int,int,double *),void(*jacobian)(double *,
 	return info;
 }
 
-void nls(nls_object obj,void (*funcmult)(double *,int,int,double *),void(*jacobian)(double *, int,int,double *),
+void nls(nls_object obj, custom_funcmult *funcmult, custom_jacobian *jacobian,
 		double *xi) {
 
 	int info,i,M,N,nprint;
@@ -517,7 +522,7 @@ void nls(nls_object obj,void (*funcmult)(double *,int,int,double *),void(*jacobi
 
 }
 
-void nls_scale(nls_object obj,void (*funcmult)(double *,int,int,double *),void(*jacobian)(double *, int,int,double *),
+void nls_scale(nls_object obj, custom_funcmult *funcmult, custom_jacobian *jacobian,
 		double *diag,double *xi) {
 
 	int info,i,M,N,nprint;

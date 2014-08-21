@@ -13,7 +13,7 @@
  * Algoritms For Minimization Without Derivatives, Richard P. Brent
  * Chapters 3-5
  */ 
-double brent_zero(double (*funcpt)(double ),double ai, double bi, double tol,double eps) {
+double brent_zero(custom_funcuni *funcuni, double ai, double bi, double tol, double eps) {
 	double bz;
 	double a,b,c,d,e,fa,fb,fc;
 	double m,s,etol,fd,p,q,r;
@@ -24,8 +24,8 @@ double brent_zero(double (*funcpt)(double ),double ai, double bi, double tol,dou
 	a = ai;
 	b = bi;
 	c = a;
-	fa = funcpt(a);
-	fb = funcpt(b);
+	fa = FUNCUNI_EVAL(funcuni,a);
+	fb = FUNCUNI_EVAL(funcuni,b);
 	fc = fa;
 	e = b - a;
 	d = e;
@@ -94,7 +94,7 @@ double brent_zero(double (*funcpt)(double ),double ai, double bi, double tol,dou
 			b -= etol;
 		}
 		
-		fb = funcpt(b);
+		fb = FUNCUNI_EVAL(funcuni,b);
 		
 		bz = b;
 		if ( ( 0.0 < fb && 0.0 < fc ) || ( fb <= 0.0 && fc <= 0.0 ) ) {
@@ -123,7 +123,7 @@ double brent_zero(double (*funcpt)(double ),double ai, double bi, double tol,dou
 	return bz;
 }
 
-double brent_local_min(double (*funcpt)(double ),double a, double b, double t, double eps, double *x) {
+double brent_local_min(custom_funcuni *funcuni, double a, double b, double t, double eps, double *x) {
 	double c,d,e,m,p,q,r,tol,t2;
 	double u,v,w,fu,fv,fw,fx;
 	double fd;
@@ -134,7 +134,7 @@ double brent_local_min(double (*funcpt)(double ),double a, double b, double t, d
 	*x = a + c * (b - a);
 	w = *x; v = w;
 	e = 0;
-	fx = funcpt(*x);
+	fx = FUNCUNI_EVAL(funcuni,*x);
 	fw = fx; fv = fw;
 	
 	m = 0.5 * (a + b);
@@ -186,7 +186,7 @@ double brent_local_min(double (*funcpt)(double ),double a, double b, double t, d
 			u = *x - tol;
 		}
 		
-		fu = funcpt(u);
+		fu = FUNCUNI_EVAL(funcuni,u);
 		
 		if (fu <= fx) {
 			if (u < *x) {

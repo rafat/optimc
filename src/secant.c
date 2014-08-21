@@ -148,12 +148,12 @@ static void inithess_naive(double *H,int N,double fi,double fsval,double *dx) {
 	
 }
 
-int bfgs_min_naive(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,int N,double *dx,double fsval,int MAXITER,
+int bfgs_min_naive(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, double *dx, double fsval, double maxstep, int MAXITER,
 		double eps,double *xf)  {
 	int rcode,iter,gfdcode;
 	int i,siter,retval;
 	double gtol,stol,dt1,dt2;
-	double fx,num,den,stop0,maxstep,fxf,eps2;
+	double fx,num,den,stop0,fxf,eps2;
 	double *jac,*hess,*scheck,*xc,*L,*step,*jacf;
 	
 	jac = (double*) malloc(sizeof(double) *N);
@@ -190,7 +190,7 @@ int bfgs_min_naive(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,
 		xi[i] *= dx[i];
 		dx[i] = 1.0 / dx[i];
 	}
-	fx = funcpt(xi,N);
+	fx = FUNCPT_EVAL(funcpt,xi,N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -202,20 +202,25 @@ int bfgs_min_naive(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,
 	}
 	
 	
-	maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
-	dt1 = dt2 = 0.0;
-	for(i = 0; i < N;++i) {
-		dt1 += dx[i] * dx[i];
-		dt2 += dx[i] * xi[i] * dx[i] * xi[i];
-	}
+	//maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
 
-	dt1 = sqrt(dt1);
-	dt2 = sqrt(dt2);
-	
-	if (dt1 > dt2) {
-		maxstep *= dt1;
-	} else {
-		maxstep *= dt2;
+	if (maxstep <= 0.0) {
+		maxstep = 1000.0;
+		dt1 = dt2 = 0.0;
+		for (i = 0; i < N; ++i) {
+			dt1 += dx[i] * dx[i];
+			dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		}
+
+		dt1 = sqrt(dt1);
+		dt2 = sqrt(dt2);
+
+		if (dt1 > dt2) {
+			maxstep *= dt1;
+		}
+		else {
+			maxstep *= dt2;
+		}
 	}
 	
 	//printf("dt1 dt2 %g \n", maxstep);
@@ -266,7 +271,7 @@ int bfgs_min_naive(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,
 		
 		//retval = swolfe(funcpt,xc,jac,step,N,dx,maxstep,stol,xf);
 		
-		fxf = funcpt(xf,N);
+		fxf = FUNCPT_EVAL(funcpt,xf,N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -404,12 +409,12 @@ void bfgs_factored(double *H,int N,double eps,double *xi,double *xf,double *jac,
 	free(u);
 }
 
-int bfgs_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,int N,double *dx,double fsval,int MAXITER,int *niter,
+int bfgs_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, double *dx, double fsval,double maxstep, int MAXITER, int *niter,
 		double eps,double gtol,double stol,double *xf)  {
 	int rcode,gfdcode;
 	int i,siter,retval;
 	double dt1,dt2;
-	double fx,num,den,stop0,maxstep,fxf,eps2;
+	double fx,num,den,stop0,fxf,eps2;
 	double *jac,*hess,*scheck,*xc,*L,*step,*jacf;
 	
 	jac = (double*) malloc(sizeof(double) *N);
@@ -444,7 +449,7 @@ int bfgs_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 		xi[i] *= dx[i];
 		dx[i] = 1.0 / dx[i];
 	}
-	fx = funcpt(xi,N);
+	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -456,20 +461,25 @@ int bfgs_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 	}
 
 
-	maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
-	dt1 = dt2 = 0.0;
-	for(i = 0; i < N;++i) {
-		dt1 += dx[i] * dx[i];
-		dt2 += dx[i] * xi[i] * dx[i] * xi[i];
-	}
+	//maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
 
-	dt1 = sqrt(dt1);
-	dt2 = sqrt(dt2);
-	
-	if (dt1 > dt2) {
-		maxstep *= dt1;
-	} else {
-		maxstep *= dt2;
+	if (maxstep <= 0.0) {
+		maxstep = 1000.0;
+		dt1 = dt2 = 0.0;
+		for (i = 0; i < N; ++i) {
+			dt1 += dx[i] * dx[i];
+			dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		}
+
+		dt1 = sqrt(dt1);
+		dt2 = sqrt(dt2);
+
+		if (dt1 > dt2) {
+			maxstep *= dt1;
+		}
+		else {
+			maxstep *= dt2;
+		}
 	}
 	
 	//Check Stop0
@@ -514,7 +524,7 @@ int bfgs_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double
 
 		retval = lnsrch(funcpt,xc,jac,step,N,dx,maxstep,stol,xf);
 
-		fxf = funcpt(xf,N);
+		fxf = FUNCPT_EVAL(funcpt, xf, N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
@@ -667,13 +677,13 @@ void inithess_l(double *H, int N, int k, double *tsk,double *tyk, double *dx) {
 
 }
 
-int bfgs_l_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,int N,int m,double *dx,double fsval,int MAXITER,int *niter,
+int bfgs_l_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, int m, double *dx, double fsval,double maxstep, int MAXITER, int *niter,
 		double eps,double gtol,double ftol,double xtol,double *xf)  {
 	int rcode,gfdcode;
 	int i,j,siter,retval;
 	int ptr,iter;
 	double dt1,dt2,alpha,fo;
-	double fx,num,den,stop0,maxstep,fxf,eps2;
+	double fx,num,den,stop0,fxf,eps2;
 	double *jac,*scheck,*xc,*H,*step,*jacf,*sk,*yk,*tsk,*tyk;
 
 	jac = (double*) malloc(sizeof(double) *N);
@@ -713,7 +723,7 @@ int bfgs_l_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doub
 		xi[i] *= dx[i];
 		dx[i] = 1.0 / dx[i];
 	}
-	fx = funcpt(xi,N);
+	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
@@ -725,20 +735,23 @@ int bfgs_l_min(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,doub
 		return 15;
 	}
 
-	maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
-	dt1 = dt2 = 0.0;
-	for(i = 0; i < N;++i) {
-		dt1 += dx[i] * dx[i];
-		dt2 += dx[i] * xi[i] * dx[i] * xi[i];
-	}
+	if (maxstep <= 0.0) {
+		maxstep = 1000.0;
+		dt1 = dt2 = 0.0;
+		for (i = 0; i < N; ++i) {
+			dt1 += dx[i] * dx[i];
+			dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		}
 
-	dt1 = sqrt(dt1);
-	dt2 = sqrt(dt2);
+		dt1 = sqrt(dt1);
+		dt2 = sqrt(dt2);
 
-	if (dt1 > dt2) {
-		maxstep *= dt1;
-	} else {
-		maxstep *= dt2;
+		if (dt1 > dt2) {
+			maxstep *= dt1;
+		}
+		else {
+			maxstep *= dt2;
+		}
 	}
 
 

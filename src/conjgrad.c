@@ -121,13 +121,13 @@ int stopcheck2(double fx,int N,double *xc,double *xf,double *jac,double *dx,doub
 }
 
 
-int cgpr_mt(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double *), double *xc, int N, double *dx, int MAXITER,int *niter,
+int cgpr_mt(custom_function *funcpt, custom_gradient *funcgrad, double *xc, int N, double *dx,double maxstep, int MAXITER, int *niter,
 		double eps,double gtol,double ftol,double xtol,double *xf) {
 	int i, rcode, retval, k, restart,gfdcode;
 	int siter;
 	double *xi,*temp, *rk, *pk, *jac, *jacf, *apk;
 	double fsval,fxf,eps2,fo;
-	double maxstep, dt1, dt2,alpha;
+	double dt1, dt2,alpha;
 
 	temp = (double*)malloc(sizeof(double)* 8);
 	rk = (double*)malloc(sizeof(double)*N);
@@ -154,26 +154,28 @@ int cgpr_mt(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double 
 	fsval = 1.0;
 	alpha = 1.0;
 
-	maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
-	dt1 = dt2 = 0.0;
 	for (i = 0; i < N; ++i) {
 		xi[i] = xc[i];
 	}
+	
+	if (maxstep <= 0.0) {
+		maxstep = 1000.0;
+		dt1 = dt2 = 0.0;
+		for (i = 0; i < N; ++i) {
+			dt1 += dx[i] * dx[i];
+			dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		}
 
-	for (i = 0; i < N; ++i) {
-		dt1 += dx[i] * dx[i];
-		dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		dt1 = sqrt(dt1);
+		dt2 = sqrt(dt2);
+		if (dt1 > dt2) {
+			maxstep *= dt1;
+		}
+		else {
+			maxstep *= dt2;
+		}
 	}
 
-	dt1 = sqrt(dt1);
-	dt2 = sqrt(dt2);
-
-	if (dt1 > dt2) {
-		maxstep *= dt1;
-	}
-	else {
-		maxstep *= dt2;
-	}
 
 
 	gfdcode = grad_fd(funcpt,funcgrad, xi, N, dx,eps2, jac);
@@ -185,7 +187,7 @@ int cgpr_mt(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double 
 		xf[i] = xi[i];
 	}
 
-	fxf = funcpt(xi, N);
+	fxf = FUNCPT_EVAL(funcpt,xi, N);
 
 	if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
@@ -259,7 +261,7 @@ int cgpr_mt(double(*funcpt)(double *, int),void(*funcgrad)(double *, int,double 
 	return rcode;
 }
 
-int conjgrad_min_lin(double (*funcpt)(double *,int),void(*funcgrad)(double *, int,double *),double *xi,int N,double *dx,int MAXITER,int *niter,
+int conjgrad_min_lin(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, double *dx, double maxstep, int MAXITER, int *niter,
 		double eps,double gtol,double ftol,double xtol,double *xf) {
 	int rcode,i;
 	
@@ -282,17 +284,15 @@ int conjgrad_min_lin(double (*funcpt)(double *,int),void(*funcgrad)(double *, in
 		dx[i] = 1.0 / dx[i];
 	}
 	
-	
 	//rcode = cgpc(xi,N,A,b,xf);
 	//rcode = cgpr(funcpt,xi,N,dx,xf);// FR
-	rcode = cgpr_mt(funcpt,funcgrad,xi,N,dx,MAXITER,niter,eps,gtol,ftol,xtol,xf);//PR+
+	rcode = cgpr_mt(funcpt,funcgrad,xi,N,dx,maxstep,MAXITER,niter,eps,gtol,ftol,xtol,xf);//PR+
 
 	for(i = 0; i < N;++i) {
 		xi[i] *= dx[i];
 		dx[i] = 1.0 / dx[i];
 	}
 	
-
 	
 	return rcode;
 }

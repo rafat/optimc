@@ -12,7 +12,7 @@
 
 //levmar test
 
-void fk10(double *x, int M, int N, double *f) {
+void fk10(double *x, int M, int N, double *f, void *params) {
 	int i;
 
 	for (i = 1; i <= M; ++i) {
@@ -20,7 +20,7 @@ void fk10(double *x, int M, int N, double *f) {
 	}
 }
 
-void fk10jac(double *x, int M, int N, double *f) {
+void fk10jac(double *x, int M, int N, double *f, void *params) {
 	int i;
 
 	for(i = 1; i <= M;++i) {
@@ -30,7 +30,7 @@ void fk10jac(double *x, int M, int N, double *f) {
 
 }
 
-void fpowell(double *x,int M,int N,double *f) {
+void fpowell(double *x, int M, int N, double *f, void *params) {
 	double pi;
 
 	pi = 3.14159265359;
@@ -48,7 +48,8 @@ void fpowell(double *x,int M,int N,double *f) {
 double myvalue
 (
     double   *x,
-    int       n
+	int       n, 
+	void *params
 )
 {
     double f ;
@@ -67,7 +68,8 @@ double myvalue
 void myvaluegrad(
 		double *x,
 		int n,
-		double *jac
+		double *jac, 
+		void *params
 )
 {
 	int i;
@@ -76,7 +78,7 @@ void myvaluegrad(
 	}
 }
 
-double quartic(double *x,int N) {
+double quartic(double *x,int N,void *params) {
 	double f;
 	// Powell's Quartic Function
 	f = (x[0] + 10 * x[1] ) * (x[0] + 10 * x[1] ) + 5 * (x[2] - x[3]) * (x[2] - x[3])
@@ -85,7 +87,7 @@ double quartic(double *x,int N) {
 	return f;
 }
 
-void quarticgrad(double *x,int N,double *g) {
+void quarticgrad(double *x, int N, double *g, void *params) {
 	double t1,t2,t3,t4;
 	// Gradient of Powell's Quartic Function
 	t1 = (x[0] + 10 * x[1]);
@@ -100,7 +102,7 @@ void quarticgrad(double *x,int N,double *g) {
 
 }
 
-double rosenbrock(double *x,int N) {
+double rosenbrock(double *x,int N,void *params) {
 	double f,alpha,alpha2;
 	alpha = 1;
 	alpha2 = alpha*alpha;
@@ -109,7 +111,7 @@ double rosenbrock(double *x,int N) {
 	return f;
 }
 
-void rosenbrockgrad(double *x,int N,double *g) {
+void rosenbrockgrad(double *x, int N, double *g, void *params) {
 	double t,alpha,alpha2;
 	alpha = 1;
 	alpha2 = alpha * alpha;
@@ -120,14 +122,14 @@ void rosenbrockgrad(double *x,int N,double *g) {
 	g[1] = -200*t/alpha;
 }
 
-double brown(double *x,int N) {
+double brown(double *x, int N, void *params) {
 	double f;
 	f = (x[0] - 1e06)*(x[0] - 1e06) + (x[1] - 2*1e-06)*(x[1] - 2*1e-06) + (x[0]*x[1] - 2)*(x[0]*x[1] - 2);
 
 	return f;
 }
 
-void browngrad(double *x,int N,double *g) {
+void browngrad(double *x, int N, double *g, void *params) {
 	double t1,t2,t3;
 
 	t1 = x[0] - 1e06;
@@ -140,13 +142,13 @@ void browngrad(double *x,int N,double *g) {
 	//printf("gradient %g %g \n",2 * t2,2 * t3 * x[0]);
 }
 
-double powell(double *x,int N) {
+double powell(double *x, int N, void *params) {
 	double f;
 	f = (10000*x[0]*x[1] - 1) * (10000*x[0]*x[1] - 1) + (exp(-x[0]) + exp(-x[1]) - 1.0001) * (exp(-x[0]) + exp(-x[1]) - 1.0001);
 	return f;
 }
 
-void powellgrad(double *x,int N,double *g) {
+void powellgrad(double *x, int N, double *g, void *params) {
 	double t1,t2;
 
 	t1 = (10000*x[0]*x[1] - 1);
@@ -156,21 +158,21 @@ void powellgrad(double *x,int N,double *g) {
 	g[1] = 2 * t1* 10000 * x[0] - 2 * exp(-x[1]) * t2;
 }
 
-double beale(double *x,int N) {
+double beale(double *x, int N, void *params) {
 	double f;
 	f = (1.5 - x[0] *(1 - x[1])) * (1.5 - x[0] *(1 - x[1])) + (2.25 - x[0] *(1 - x[1] * x[1])) * (2.25 - x[0] *(1 - x[1] * x[1])) +
 			 	 (2.625 - x[0] *(1 - x[1] * x[1] * x[1])) * (2.625 - x[0] *(1 - x[1] * x[1] * x[1]));
 	return f;
 }
 
-double froth(double *x,int N) {
+double froth(double *x, int N, void *params) {
 	double f;
 	f = (-13 + x[0] + ((5 - x[1]) * x[1] - 2.0) *x[1]) * (-13 + x[0] + ((5 - x[1]) * x[1] - 2.0) *x[1]) +
 			(-29 + x[0] + ((x[1] + 1) * x[1] - 14.0) *x[1]) * (-29 + x[0] + ((x[1] + 1) * x[1] - 14.0) *x[1]);
 	return f;
 }
 
-double humps(double x) {
+double humps(double x,void *params) {
 	double f;
 
 	f = 1./((x - 0.3)*(x - 0.3) + 0.01) + 1./((x - 0.9)*(x - 0.9) + 0.04) - 6;
@@ -178,7 +180,7 @@ double humps(double x) {
 	return f;
 }
 
-double func4(double *x,int N) {
+double func4(double *x, int N, void *params) {
 	double f;
 	f = pow((x[0]-2.0),4.0) + pow((x[0]-2.0),2.0) * x[1]*x[1] + (x[1] + 1.0) * (x[1] + 1.0);
 
@@ -186,7 +188,7 @@ double func4(double *x,int N) {
 	return f;
 }
 
-double func1(double *x,int N)
+double func1(double *x, int N, void *params)
 {
 	double f;
 
@@ -213,5 +215,14 @@ double func1(double *x,int N)
 	//f = (x[0] - 1e06)*(x[0] - 1e06) + (x[1] - 2*1e-06)*(x[1] - 2*1e-06) + (x[0]*x[1] - 2)*(x[0]*x[1] - 2);
 	f = 100 * (x[1]-x[0]*x[0]) * (x[1]-x[0]*x[0]) + ( 1.0 - x[0] ) * ( 1.0 - x[0] )  + 90 *(x[3]-x[2]*x[2])*(x[3]-x[2]*x[2])
 	+ ( 1.0 - x[2])*( 1.0 - x[2]) + 10 * (x[1] + x[3] - 2)*(x[1] + x[3] - 2) + 0.1 * (x[1] - x[3]) *(x[1] - x[3]);
+	return f;
+}
+
+double tf6(double *x,int N,void *params) {
+	double f;
+	double *p = (double*) params;
+
+	f = p[0] * (x[1]-x[0]*x[0]) * (x[1]-x[0]*x[0]) + ( 1.0 - x[0] ) * ( 1.0 - x[0] )  + p[1] *(x[3]-x[2]*x[2])*(x[3]-x[2]*x[2])
+	+ ( 1.0 - x[2])*( 1.0 - x[2]) + 10 * (x[1] + x[3] - 2)*(x[1] + x[3] - 2) + p[2] * (x[1] - x[3]) *(x[1] - x[3]);
 	return f;
 }
