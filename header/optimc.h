@@ -92,6 +92,16 @@ struct custom_jacobian_set{
 	void *params;
 };
 
+#define FUNCPT_EVAL(F,x,N) (*((F)->funcpt))(x,N,(F)->params)
+
+#define FUNCGRAD_EVAL(F,x,N,g) (*((F)->funcgrad))(x,N,(g),(F)->params)
+
+#define FUNCUNI_EVAL(F,x) (*((F)->funcuni))(x,(F)->params)
+
+#define FUNCMULT_EVAL(F,x,M,N,f) (*((F)->funcmult))(x,M,N,(f),(F)->params)
+
+#define JACOBIAN_EVAL(F,x,M,N,jac) (*((F)->jacobian))(x,M,N,(jac),(F)->params)
+
 void setnlsTOL(nls_object obj,double gtol,double ftol,double xtol);
 
 void summary(opt_object obj);
