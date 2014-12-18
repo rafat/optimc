@@ -20,11 +20,11 @@ int main(void) {
 		xi[i] = 1;
 	}
 	printf("\n\n%-25s%-20s%-20s \n", "Method", "Return Value", "Objective Function");
-	maxstep = 1000.0; // Set the value accordingly 
+	maxstep = 1000.0; // Set the value accordingly. Maximum Step size 
 
 
 
-	for (j = 0; j < 7; ++j) {
+	for (j = 0; j < 8; ++j) {
 		retval = fminunc(&myvalue_min, &myvaluegrad_min, N, xi,maxstep, j, xf);
 		printf("\n\n%-25d%-20d%-20g \n", j, retval, myvalue(xf, N,0));
 		printf("Function Minimized At : ");

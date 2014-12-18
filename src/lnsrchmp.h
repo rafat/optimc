@@ -54,14 +54,6 @@ struct custom_jacobian_set{
 
 #define JACOBIAN_EVAL(F,x,M,N,jac) (*((F)->jacobian))(x,M,N,(jac),(F)->params)
 
-double pmax(double a, double b);
-
-double pmin(double a, double b);
-
-double signx(double x);
-
-double l2norm(double *vec, int N);
-
 int stopcheck_mt(double fx, int N, double *xc, double *xf, double *jac, double *dx, double fsval, double gtol, double stol, int retval);
 
 int stopcheck2_mt(double fx, int N, double fo, double *jac, double *dx, double eps,double stoptol, double functol, int retval);

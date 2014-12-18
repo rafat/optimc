@@ -193,12 +193,16 @@ int bfgs_min_naive(custom_function *funcpt, custom_gradient *funcgrad, double *x
 	fx = FUNCPT_EVAL(funcpt,xi,N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
-		return 15;
+		rcode = 15;
+	}
+	if (fx != fx) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
 	}
 	
 	gfdcode = grad_fd(funcpt,funcgrad,xi,N,dx,eps2,jac);
 	if (gfdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 	
 	
@@ -274,12 +278,19 @@ int bfgs_min_naive(custom_function *funcpt, custom_gradient *funcgrad, double *x
 		fxf = FUNCPT_EVAL(funcpt,xf,N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
-			return 15;
+			rcode = 15;
+			break;
+		}
+		if (fxf != fxf) {
+			printf("Program Exiting as the function returns NaN");
+			rcode = 15;
+			break;
 		}
 		//printf("%d %g \n",iter,fxf);
 		gfdcode = grad_fd(funcpt,funcgrad,xf,N,dx,eps2,jacf);
 		if (gfdcode == 15) {
-			return 15;
+			rcode = 15;
+			break;
 		}
 		rcode = stopcheck(fxf,N,xc,xf,jacf,dx,fsval,gtol,stol,retval);
 		//hessian_fd(funcpt,xf,N,dx,hess);
@@ -435,6 +446,7 @@ int bfgs_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int
 	 * 2 - Distance between the last two steps is less than stol or |xf - xi| <= stol so xf may be the local minima.
 	 * 3 - Global Step failed to locate a lower point than xi so xi may be the local minima.
 	 * 4 - Iteration Limit exceeded. Convergence not achieved.
+	 15 -  Failure as Inf/Nan Values encountered 
 	 * 
 	 */ 
 	
@@ -452,12 +464,16 @@ int bfgs_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int
 	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
-		return 15;
+		rcode = 15;
+	}
+	if (fx != fx) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
 	}
 
 	gfdcode = grad_fd(funcpt,funcgrad,xi,N,dx,eps2,jac);
 	if (gfdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 
 
@@ -504,7 +520,6 @@ int bfgs_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int
 		for(i = 0; i < N;++i) {
 			xf[i] = xi[i];
 		}
-		return rcode;
 	}
 	
 	//hessian_fd(funcpt,xi,N,dx,hess);
@@ -527,12 +542,19 @@ int bfgs_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int
 		fxf = FUNCPT_EVAL(funcpt, xf, N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
-			return 15;
+			rcode = 15;
+			break;
+		}
+		if (fxf != fxf) {
+			printf("Program Exiting as the function returns NaN");
+			rcode = 15;
+			break;
 		}
 
 		gfdcode = grad_fd(funcpt,funcgrad,xf,N,dx,eps2,jacf);
 		if (gfdcode == 15) {
-			return 15;
+			rcode = 15;
+			break;
 		}
 		rcode = stopcheck(fxf,N,xc,xf,jacf,dx,fsval,gtol,stol,retval);
 		//hessian_fd(funcpt,xf,N,dx,hess);
@@ -553,6 +575,167 @@ int bfgs_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int
 		dx[i] = 1.0 / dx[i];
 	}
 	
+	free(jac);
+	free(hess);
+	free(scheck);
+	free(xc);
+	free(L);
+	free(step);
+	free(jacf);
+	return rcode;
+}
+
+int bfgs_min2(custom_function *funcpt, custom_gradient *funcgrad, double *xi, int N, int m, double *dx, double fsval, double maxstep, int MAXITER, int *niter,
+	double eps, double gtol, double ftol, double xtol, double *xf)  {
+	int rcode, gfdcode;
+	int i, siter, retval;
+	double dt1, dt2;
+	double fx, num, den, stop0, fxf, eps2,fo,alpha;
+	double *jac, *hess, *scheck, *xc, *L, *step, *jacf;
+
+	jac = (double*)malloc(sizeof(double)*N);
+	scheck = (double*)malloc(sizeof(double)*N);
+	xc = (double*)malloc(sizeof(double)*N);
+	step = (double*)malloc(sizeof(double)*N);
+	hess = (double*)malloc(sizeof(double)*N * N);
+	L = (double*)malloc(sizeof(double)*N * N);
+	jacf = (double*)malloc(sizeof(double)*N);
+
+	/*
+	* Return Codes
+	*
+	* Codes 1,2,3 denote possible success.
+	* Codes 0 and 4 denote failure.
+	*
+	* 1 - df(x)/dx <= gtol achieved so xf may be the local minima.
+	* 2 - Distance between the last two steps is less than stol or |xf - xi| <= stol so xf may be the local minima.
+	* 3 - Global Step failed to locate a lower point than xi so xi may be the local minima.
+	* 4 - Iteration Limit exceeded. Convergence not achieved.
+	* 15 -Failure as Inf/Nan Values encountered
+	*
+	*/
+
+	rcode = 0;
+	*niter = 0;
+	siter = MAXITER;
+	eps2 = sqrt(eps);
+
+	alpha = 1.0;
+	gfdcode = 0;
+
+	//set values
+	for (i = 0; i < N; ++i) {
+		xi[i] *= dx[i];
+		dx[i] = 1.0 / dx[i];
+	}
+	fx = FUNCPT_EVAL(funcpt, xi, N);
+	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
+		printf("Program Exiting as the function value exceeds the maximum double value");
+		rcode = 15;
+	}
+	if (fx != fx) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
+	}
+
+	fo = fx;
+
+	gfdcode = grad_fd(funcpt, funcgrad, xi, N, dx, eps2, jac);
+	if (gfdcode == 15) {
+		rcode = 15;
+	}
+
+
+	//maxstep = 1000.0; // Needs to be set at a much higher value proportional to l2 norm of dx
+
+	if (maxstep <= 0.0) {
+		maxstep = 1000.0;
+		dt1 = dt2 = 0.0;
+		for (i = 0; i < N; ++i) {
+			dt1 += dx[i] * dx[i];
+			dt2 += dx[i] * xi[i] * dx[i] * xi[i];
+		}
+
+		dt1 = sqrt(dt1);
+		dt2 = sqrt(dt2);
+
+		if (dt1 > dt2) {
+			maxstep *= dt1;
+		}
+		else {
+			maxstep *= dt2;
+		}
+	}
+
+	//Check Stop0
+	if (fabs(fx) > fabs(fsval)) {
+		den = fabs(fx);
+	}
+	else {
+		den = fabs(fsval);
+	}
+	for (i = 0; i < N; ++i) {
+		if (fabs(xi[i]) > 1.0 / fabs(dx[i])) {
+			num = fabs(xi[i]);
+		}
+		else {
+			num = 1.0 / fabs(dx[i]);
+		}
+		scheck[i] = fabs(jac[i]) * num / den;
+	}
+
+	stop0 = array_max_abs(scheck, N);
+
+	if (stop0 <= gtol * 1e-03) {
+		rcode = 1;
+		for (i = 0; i < N; ++i) {
+			xf[i] = xi[i];
+		}
+	}
+
+	//hessian_fd(funcpt,xi,N,dx,hess);
+	inithess_lower(L, N, fx, fsval, dx);
+
+	for (i = 0; i < N; ++i) {
+		xc[i] = xi[i];
+	}
+	fxf = fx;
+
+	while (rcode == 0 && *niter < siter) {
+		*niter = *niter + 1;
+		scale(jac, 1, N, -1.0);
+
+		linsolve_lower(L, N, jac, step);
+
+		scale(jac, 1, N, -1.0);
+
+		for (i = 0; i < N; ++i) {
+			jacf[i] = jac[i];
+		}
+
+		//retval = lnsrch(funcpt, xc, jac, step, N, dx, maxstep, stol, xf);
+		retval = lnsrchmt(funcpt,funcgrad, xc, &fxf, jac, &alpha, step, N, dx, maxstep,MAXITER,eps2,ftol, gtol, xtol, xf);
+
+		//rcode = stopcheck(fxf, N, xc, xf, jacf, dx, fsval, gtol, stol, retval);
+		rcode = stopcheck2_mt(fxf, N, fo, jac, dx, eps, gtol, ftol, retval);
+		fo = fxf;
+		//hessian_fd(funcpt,xf,N,dx,hess);
+		//bfgs_naive(hess,N,xc,xf,jac,jacf);
+		bfgs_factored(L, N, eps, xc, xf, jacf, jac);
+		for (i = 0; i < N; ++i) {
+			xc[i] = xf[i];
+		}
+	}
+
+	if (rcode == 0 && *niter >= siter) {
+		rcode = 4;
+	}
+
+	for (i = 0; i < N; ++i) {
+		xi[i] *= dx[i];
+		dx[i] = 1.0 / dx[i];
+	}
+
 	free(jac);
 	free(hess);
 	free(scheck);
@@ -726,13 +909,17 @@ int bfgs_l_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, i
 	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
-		return 15;
+		rcode = 15;
+	}
+	if (fx != fx) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
 	}
 	fo = fx;
 
 	gfdcode = grad_fd(funcpt,funcgrad,xi,N,dx,eps2,jac);
 	if (gfdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 
 	if (maxstep <= 0.0) {
@@ -777,7 +964,6 @@ int bfgs_l_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, i
 		for(i = 0; i < N;++i) {
 			xf[i] = xi[i];
 		}
-		return rcode;
 	}
 
 	//hessian_fd(funcpt,xi,N,dx,hess);
@@ -821,6 +1007,7 @@ int bfgs_l_min(custom_function *funcpt, custom_gradient *funcgrad, double *xi, i
 		//rcode = stopcheck_mt(fxf, N, xc, xf, jac, dx, fsval, gtol, ftol, retval);
 		rcode = stopcheck2_mt(fxf,N,fo,jac,dx,eps,gtol,ftol,retval);
 		//rcode = stopcheck3_mt(xc,xf,fxf,N,fo,jac,dx,eps,gtol,ftol,retval);
+		//printf("\n CODE %d", rcode);
 		fo = fxf;
 		for (i = 0; i < N;++i) {
 			tsk[i] = xf[i] - xc[i];

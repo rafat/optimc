@@ -19,44 +19,6 @@ http://www.cs.umd.edu/~oleary/LBFGS/FORTRAN/linesearch.f
 */
 
 
-double pmax(double a, double b) {
-	if (a > b) {
-		return a;
-	} else {
-		return b;
-	}
-}
-
-double pmin(double a, double b) {
-	if (a < b) {
-		return a;
-	}
-	else {
-		return b;
-	}
-}
-
-double signx(double x) {
-	double sgn;
-	if (x >= 0.) {
-		sgn = 1.0;
-	}
-	else {
-		sgn = -1.0;
-	}
-	return sgn;
-}
-
-double l2norm(double *vec, int N) {
-	double l2, sum;
-	int i;
-	sum = 0.;
-	for (i = 0; i < N; ++i) {
-		sum += vec[i] * vec[i];
-	}
-	l2 = sqrt(sum);
-	return l2;
-}
 
 int grad_fd(custom_function *funcpt, custom_gradient *funcgrad, double *x, int N, double *dx,
 		double eps2, double *f) {
@@ -113,10 +75,18 @@ int grad_calc2(custom_function *funcpt, double *x, int N, double *dx, double eps
 			printf("Program Exiting as the function value exceeds the maximum double value");
 			return 15;
 		}
+		if (fp != fp) {
+			printf("Program Exiting as the function returns NaN");
+			return 15;
+		}
 		x[j] = temp - stepsize;
 		fm = FUNCPT_EVAL(funcpt,x,N);
 		if (fm >= DBL_MAX || fm <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			return 15;
+		}
+		if (fm != fm) {
+			printf("Program Exiting as the function returns NaN");
 			return 15;
 		}
 		f[j] = (fp - fm)/ (2 * stepsize);
@@ -150,6 +120,12 @@ int grad_calc(custom_function *funcpt, double *x, int N, double *dx, double eps2
 		f[i] = (FUNCPT_EVAL(funcpt, xi, N) - FUNCPT_EVAL(funcpt, x, N)) / step;
 		if (f[i] >= DBL_MAX || f[i] <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			free(xi);
+			return 15;
+		}
+		if (f[i] != f[i]) {
+			printf("Program Exiting as the function returns NaN");
+			free(xi);
 			return 15;
 		}
 		//xi[i] -= step;
@@ -607,13 +583,19 @@ int cvsrch(custom_function *funcpt, custom_gradient *funcgrad, double *x, double
 		*f = FUNCPT_EVAL(funcpt,x, N);
 		if (*f >= DBL_MAX || *f <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			free(rcheck);
+			free(wa);
+			return 15;
+		}
+		if (*f != *f) {
+			printf("Program Exiting as the function returns NaN");
+			free(rcheck);
+			free(wa);
 			return 15;
 		}
 		grad_cd(funcpt,funcgrad, x, N, dx, eps2,g);
 		nfev++;
 
-		//printf("ITER %d stp %g \n", nfev,stp);
-		//mdisplay(x, 1, N);
 
 		dg = 0.0;
 		for (j = 0; j < N; ++j) {
@@ -650,6 +632,8 @@ int cvsrch(custom_function *funcpt, custom_gradient *funcgrad, double *x, double
 		if (stage1 == 1 && *f <= ftest1 && dg >= pmin(ftol, gtol)*dginit) {
 			stage1 = 0;
 		}
+
+
 		/*
 		A modified function is used to predict the step only if
         we have not obtained a step for which the modified

@@ -330,7 +330,17 @@ int hessian_fd(custom_function *funcpt,double *x,int N,double *dx,double eps,dou
 			f[i*N+j] = ((FUNCPT_EVAL(funcpt,xij,N) - FUNCPT_EVAL(funcpt,xi,N)) - (FUNCPT_EVAL(funcpt,xj,N) - FUNCPT_EVAL(funcpt,x,N)))/(stepi * stepj);
 			if (f[i*N+j] >= DBL_MAX || f[i*N+j] <= -DBL_MAX) {
 				printf("Program Exiting as the function value exceeds the maximum double value");
-				return 15;;
+				free(xi);
+				free(xj);
+				free(xij);
+				return 15;
+			}
+			if (f[i*N+j] != f[i*N+j]) {
+				printf("Program Exiting as the function returns NaN");
+				free(xi);
+				free(xj);
+				free(xij);
+				return 15;
 			}
 			xj[j] -= stepj;
 			xij[j] -= stepj;
@@ -349,7 +359,9 @@ int hessian_fd2(custom_function *funcpt,double *x,int N,double *dx,double eps,do
 	int i,j,step,retval;
 	double fd,temp,ft,fc,temp2,stepmax;
 	double *stepsize,*f2;
-	
+	/*
+	Returns Upper Triangular matrix only. If you want the full matrix then either use hessian_fd or copy the upper triangular value to lower triangle.
+	*/
 	fd = pow((double) eps,1.0/3.0);
 	
 	stepsize = (double*) malloc(sizeof(double) *N);
@@ -358,6 +370,14 @@ int hessian_fd2(custom_function *funcpt,double *x,int N,double *dx,double eps,do
 	fc = FUNCPT_EVAL(funcpt,x,N);
 	if (fc >= DBL_MAX || fc <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
+		free(stepsize);
+		free(f2);
+		return 15;
+	}
+	if (fc != fc) {
+		printf("Program Exiting as the function returns NaN");
+		free(stepsize);
+		free(f2);
 		return 15;
 	}
 	
@@ -375,6 +395,14 @@ int hessian_fd2(custom_function *funcpt,double *x,int N,double *dx,double eps,do
 		f2[i] = FUNCPT_EVAL(funcpt,x,N);
 		if (f2[i] >= DBL_MAX || f2[i] <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			free(stepsize);
+			free(f2);
+			return 15;
+		}
+		if (f2[i] != f2[i]) {
+			printf("Program Exiting as the function returns NaN");
+			free(stepsize);
+			free(f2);
 			return 15;
 		}
 		x[i] = temp;
@@ -387,6 +415,14 @@ int hessian_fd2(custom_function *funcpt,double *x,int N,double *dx,double eps,do
 		ft = FUNCPT_EVAL(funcpt, x, N);
 		if (ft >= DBL_MAX || ft <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			free(stepsize);
+			free(f2);
+			return 15;
+		}
+		if (ft != ft) {
+			printf("Program Exiting as the function returns NaN");
+			free(stepsize);
+			free(f2);
 			return 15;
 		}
 		f[step+i] = (fc - f2[i] + ft - f2[i])/(stepsize[i] * stepsize[i]);
@@ -397,6 +433,14 @@ int hessian_fd2(custom_function *funcpt,double *x,int N,double *dx,double eps,do
 			ft = FUNCPT_EVAL(funcpt, x, N);
 			if (ft >= DBL_MAX || ft <= -DBL_MAX) {
 				printf("Program Exiting as the function value exceeds the maximum double value");
+				free(stepsize);
+				free(f2);
+				return 15;
+			}
+			if (ft != ft) {
+				printf("Program Exiting as the function returns NaN");
+				free(stepsize);
+				free(f2);
 				return 15;
 			}
 			f[step+j] = (fc - f2[i] + ft - f2[j])/(stepsize[i] * stepsize[j]);
@@ -518,6 +562,22 @@ int lnsrch(custom_function *funcpt,double *xi,double *jac,double *p,int N,double
 	funci = FUNCPT_EVAL(funcpt, xi, N);
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
+		free(slopei);
+		free(temp1);
+		free(temp2);
+		free(ab);
+		free(rcheck);
+		free(pl);
+		return 15;
+	}
+	if (funci != funci) {
+		printf("Program Exiting as the function returns NaN");
+		free(slopei);
+		free(temp1);
+		free(temp2);
+		free(ab);
+		free(rcheck);
+		free(pl);
 		return 15;
 	}
 	while (retval > 1 && iter < MAXITER) {
@@ -529,6 +589,22 @@ int lnsrch(custom_function *funcpt,double *xi,double *jac,double *p,int N,double
 		funcf = FUNCPT_EVAL(funcpt, x, N);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			free(slopei);
+			free(temp1);
+			free(temp2);
+			free(ab);
+			free(rcheck);
+			free(pl);
+			return 15;
+		}
+		if (funcf != funcf) {
+			printf("Program Exiting as the function returns NaN");
+			free(slopei);
+			free(temp1);
+			free(temp2);
+			free(ab);
+			free(rcheck);
+			free(pl);
 			return 15;
 		}
 
@@ -637,6 +713,24 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 	
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
+		free(slopei);
+		free(temp1);
+		free(temp2);
+		free(ab);
+		free(rcheck);
+		free(pl);
+		free(slopen);
+		return 15;
+	}
+	if (funci != funci) {
+		printf("Program Exiting as the function returns NaN");
+		free(slopei);
+		free(temp1);
+		free(temp2);
+		free(ab);
+		free(rcheck);
+		free(pl);
+		free(slopen);
 		return 15;
 	}
 	while (retval > 1) {
@@ -645,9 +739,27 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 		}
 		madd(xi,pl,x,1,N);
 		funcf = FUNCPT_EVAL(funcpt, x, N);
-		printf("%g lmax %g %g \n",lambda,funcf,funci + alpha *lambda *slopei[0]);
+		//printf("%g lmax %g %g \n",lambda,funcf,funci + alpha *lambda *slopei[0]);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			free(slopei);
+			free(temp1);
+			free(temp2);
+			free(ab);
+			free(rcheck);
+			free(pl);
+			free(slopen);
+			return 15;
+		}
+		if (funcf != funcf) {
+			printf("Program Exiting as the function returns NaN");
+			free(slopei);
+			free(temp1);
+			free(temp2);
+			free(ab);
+			free(rcheck);
+			free(pl);
+			free(slopen);
 			return 15;
 		}
 		if (funcf <= funci + alpha *lambda *slopei[0]) {
@@ -669,7 +781,6 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 							} else {
 								lambda = lambdamax;
 							}
-							//printf("%g lmax %g %g \n",lambda,funcf,funci + alpha *lambda *slopei[0]);
 							for(i = 0; i < N;++i) {
 								pl[i] = p[i] * lambda;
 							}
@@ -677,11 +788,36 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
+								free(slopei);
+								free(temp1);
+								free(temp2);
+								free(ab);
+								free(rcheck);
+								free(pl);
+								free(slopen);
+								return 15;
+							}
+							if (funcf != funcf) {
+								printf("Program Exiting as the function returns NaN");
+								free(slopei);
+								free(temp1);
+								free(temp2);
+								free(ab);
+								free(rcheck);
+								free(pl);
+								free(slopen);
 								return 15;
 							}
 							if (funcf <= funci + alpha *lambda *slopei[0]) {
 								gfdcode = grad_fd(funcpt,funcgrad,x,N,dx,eps2,jacf);
 								if (gfdcode == 15) {
+									free(slopei);
+									free(temp1);
+									free(temp2);
+									free(ab);
+									free(rcheck);
+									free(pl);
+									free(slopen);
 									return 15;
 								}
 								mmult(jacf,p,slopen,1,N,1);
@@ -705,8 +841,7 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 							funchi = funcf;
 							funclo = funcprev;
 						}
-						printf("%g MAX %g %g \n",lambda,slopen[0],beta * slopei[0]);
-						printf("diff %g %g \n",lambdadiff,lambdamin);
+
 						while ((slopen[0] < beta * slopei[0]) && lambdadiff >= lambdamin) {
 							lambdainc = -slopen[0] * lambdadiff * lambdadiff / (2.0 * (funchi - (funclo + slopen[0] *lambdadiff)));
 							if ( lambdainc < 0.2 * lambdadiff) {
@@ -720,6 +855,24 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
+								free(slopei);
+								free(temp1);
+								free(temp2);
+								free(ab);
+								free(rcheck);
+								free(pl);
+								free(slopen);
+								return 15;
+							}
+							if (funcf != funcf) {
+								printf("Program Exiting as the function returns NaN");
+								free(slopei);
+								free(temp1);
+								free(temp2);
+								free(ab);
+								free(rcheck);
+								free(pl);
+								free(slopen);
 								return 15;
 							}
 							if (funcf > funci + alpha *lambda *slopei[0]) {
@@ -728,6 +881,13 @@ int lnsrchmod(custom_function *funcpt, custom_gradient *funcgrad, double *xi, do
 							} else {
 								gfdcode = grad_fd(funcpt,funcgrad,x,N,dx,eps2,jacf);
 								if (gfdcode == 15) {
+									free(slopei);
+									free(temp1);
+									free(temp2);
+									free(ab);
+									free(rcheck);
+									free(pl);
+									free(slopen);
 									return 15;
 								}
 								mmult(jacf,p,slopen,1,N,1);
@@ -861,6 +1021,10 @@ int lnsrchcg(custom_function *funcpt, custom_gradient *funcgrad, double *xi, dou
 		printf("Program Exiting as the function value exceeds the maximum double value");
 		return 15;
 	}
+	if (funci != funci) {
+		printf("Program Exiting as the function returns NaN");
+		return 15;
+	}
 	while (retval > 1) {
 		for(i = 0; i < N;++i) {
 			pl[i] = p[i] * lambda;
@@ -869,6 +1033,10 @@ int lnsrchcg(custom_function *funcpt, custom_gradient *funcgrad, double *xi, dou
 		funcf = FUNCPT_EVAL(funcpt, x, N);
 		if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
+			return 15;
+		}
+		if (funcf != funcf) {
+			printf("Program Exiting as the function returns NaN");
 			return 15;
 		}
 		if (funcf <= funci + alpha *lambda *slopei[0]) {
@@ -895,6 +1063,10 @@ int lnsrchcg(custom_function *funcpt, custom_gradient *funcgrad, double *xi, dou
 							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
+								return 15;
+							}
+							if (funcf != funcf) {
+								printf("Program Exiting as the function returns NaN");
 								return 15;
 							}
 							if (funcf <= funci + alpha *lambda *slopei[0]) {
@@ -934,6 +1106,10 @@ int lnsrchcg(custom_function *funcpt, custom_gradient *funcgrad, double *xi, dou
 							funcf = FUNCPT_EVAL(funcpt, x, N);
 							if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 								printf("Program Exiting as the function value exceeds the maximum double value");
+								return 15;
+							}
+							if (funcf != funcf) {
+								printf("Program Exiting as the function returns NaN");
 								return 15;
 							}
 							if (funcf > funci + alpha *lambda *slopei[0]) {
@@ -1117,12 +1293,16 @@ int newton_min_func(custom_function *funcpt, custom_gradient *funcgrad, double *
 	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
-		return 15;
+		rcode = 15;
+	}
+	if (fx != fx) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
 	}
 	
 	gfdcode = grad_fd(funcpt,funcgrad,xi,N,dx,eps2,jac);
 	if (gfdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 	
 	
@@ -1171,13 +1351,12 @@ int newton_min_func(custom_function *funcpt, custom_gradient *funcgrad, double *
 		for(i = 0; i < N;++i) {
 			xf[i] = xi[i];
 		}
-		return rcode;
 	}
 	
 	//hessian_fd(funcpt,xi,N,dx,eps2,hess);
 	hdcode = hessian_opt(funcpt,funcgrad,xi,N,jac,dx,eps,eps2,hess);
 	if (hdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 	
 	for(i = 0; i < N;++i) {
@@ -1198,18 +1377,25 @@ int newton_min_func(custom_function *funcpt, custom_gradient *funcgrad, double *
 		fxf = FUNCPT_EVAL(funcpt, xf, N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
-			return 15;
+			rcode = 15;
+			break;
+		}
+		if (fxf != fxf) {
+			printf("Program Exiting as the function returns NaN");
+			rcode = 15;
+			break;
 		}
 		//printf("%d \n",iter);
 		gfdcode = grad_fd(funcpt,funcgrad,xf,N,dx,eps2,jac);
 		if (gfdcode == 15) {
-			return 15;
+			rcode = 15;
+			break;
 		}
 		rcode = stopcheck(fxf,N,xc,xf,jac,dx,fsval,gtol,stol,retval);
 		//hessian_fd(funcpt,xf,N,dx,eps,hess);
 		hdcode = hessian_opt(funcpt,funcgrad,xf,N,jac,dx,eps,eps2,hess);
 		if (hdcode == 15) {
-			return 15;
+			rcode = 15;
 		}
 		for(i = 0; i < N;++i) {
 			xc[i] = xf[i];
@@ -1455,6 +1641,14 @@ int trupdate(custom_function *funcpt,double *xi,double *jac,double *step,int N,d
 	funci = FUNCPT_EVAL(funcpt, xi, N);
 	if (funci >= DBL_MAX || funci <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
+		free(rcheck);
+		free(slopei);
+		return 15;
+	}
+	if (funci != funci) {
+		printf("Program Exiting as the function returns NaN");
+		free(rcheck);
+		free(slopei);
 		return 15;
 	}
 	
@@ -1463,6 +1657,14 @@ int trupdate(custom_function *funcpt,double *xi,double *jac,double *step,int N,d
 	funcf = FUNCPT_EVAL(funcpt, x, N);
 	if (funcf >= DBL_MAX || funcf <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
+		free(rcheck);
+		free(slopei);
+		return 15;
+	}
+	if (funcf != funcf) {
+		printf("Program Exiting as the function returns NaN");
+		free(rcheck);
+		free(slopei);
 		return 15;
 	}
 	
@@ -1617,12 +1819,16 @@ int newton_min_trust(custom_function *funcpt, custom_gradient *funcgrad, double 
 	fx = FUNCPT_EVAL(funcpt, xi, N);
 	if (fx >= DBL_MAX || fx <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
-		return 15;
+		rcode = 15;
+	}
+	if (fx != fx) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
 	}
 	
 	gfdcode = grad_fd(funcpt,funcgrad,xi,N,dx,eps2,jac);
 	if (gfdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 	fdiff = 1;
 	//grad_cd(funcpt,funcgrad,xi,N,dx,eps3,jac);
@@ -1666,13 +1872,13 @@ int newton_min_trust(custom_function *funcpt, custom_gradient *funcgrad, double 
 		for(i = 0; i < N;++i) {
 			xf[i] = xi[i];
 		}
-		return rcode;
+		
 	}
 	
 	//hessian_fd(funcpt,xi,N,dx,eps,hess);
 	hdcode = hessian_opt(funcpt,funcgrad,xi,N,jac,dx,eps,eps2,hess);
 	if (hdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 	
 	for(i = 0; i < N;++i) {
@@ -1704,19 +1910,26 @@ int newton_min_trust(custom_function *funcpt, custom_gradient *funcgrad, double 
 		fxf = FUNCPT_EVAL(funcpt, xf, N);
 		if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 			printf("Program Exiting as the function value exceeds the maximum double value");
-			return 15;
+			rcode = 15;
+			break;
+		}
+		if (fxf != fxf) {
+			printf("Program Exiting as the function returns NaN");
+			rcode = 15;
+			break;
 		}
 
 		gfdcode = grad_fd(funcpt,funcgrad,xf,N,dx,eps2,jac);
 		if (gfdcode == 15) {
-			return 15;
+			rcode = 15;
+			break;
 		}
 		//grad_cd(funcpt,funcgrad,xf,N,dx,eps3,jac);
 		rcode = stopcheck(fxf,N,xc,xf,jac,dx,fsval,gtol,stol,retval);
 		//hessian_fd(funcpt,xf,N,dx,eps,hess);
 		hdcode = hessian_opt(funcpt,funcgrad,xf,N,jac,dx,eps,eps2,hess);
 		if (hdcode == 15) {
-			return 15;
+			rcode = 15;
 		}
 		for(i = 0; i < N;++i) {
 			xc[i] = xf[i];

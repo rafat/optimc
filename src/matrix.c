@@ -28,6 +28,64 @@ double macheps() {
 	return macheps;
 }
 
+double pmax(double a, double b) {
+	if (a > b) {
+		return a;
+	}
+	else {
+		return b;
+	}
+}
+
+double pmin(double a, double b) {
+	if (a < b) {
+		return a;
+	}
+	else {
+		return b;
+	}
+}
+
+int imax(int a, int b) {
+	if (a > b) {
+		return a;
+	}
+	else {
+		return b;
+	}
+}
+
+int imin(int a, int b) {
+	if (a < b) {
+		return a;
+	}
+	else {
+		return b;
+	}
+}
+
+double signx(double x) {
+	double sgn;
+	if (x >= 0.) {
+		sgn = 1.0;
+	}
+	else {
+		sgn = -1.0;
+	}
+	return sgn;
+}
+
+double l2norm(double *vec, int N) {
+	double l2, sum;
+	int i;
+	sum = 0.;
+	for (i = 0; i < N; ++i) {
+		sum += vec[i] * vec[i];
+	}
+	l2 = sqrt(sum);
+	return l2;
+}
+
 int compare (const void* ind1, const void* ind2)
 {
 	if (*((vipair *)ind1)->a > *((vipair *)ind2)->a)

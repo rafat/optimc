@@ -28,6 +28,18 @@ extern "C" {
 
 double macheps();
 
+double pmax(double a, double b);
+
+double pmin(double a, double b);
+
+int imax(int a, int b);
+
+int imin(int a, int b);
+
+double signx(double x);
+
+double l2norm(double *vec, int N);
+
 int compare (const void* ind1, const void* ind2);
 
 void sort1d(double* v,int N, int* pos);

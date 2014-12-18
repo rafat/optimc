@@ -180,7 +180,7 @@ int cgpr_mt(custom_function *funcpt, custom_gradient *funcgrad, double *xc, int 
 
 	gfdcode = grad_fd(funcpt,funcgrad, xi, N, dx,eps2, jac);
 	if (gfdcode == 15) {
-		return 15;
+		rcode = 15;
 	}
 	for (i = 0; i < N; ++i) {
 		pk[i] = -jac[i];
@@ -191,7 +191,11 @@ int cgpr_mt(custom_function *funcpt, custom_gradient *funcgrad, double *xc, int 
 
 	if (fxf >= DBL_MAX || fxf <= -DBL_MAX) {
 		printf("Program Exiting as the function value exceeds the maximum double value");
-		return 15;
+		rcode = 15;
+	}
+	if (fxf != fxf) {
+		printf("Program Exiting as the function returns NaN");
+		rcode = 15;
 	}
 
 	if (restart < N) {

@@ -43,7 +43,7 @@ opt_object opt_init(int N) {
 	return obj;
 }
 
-void summary(opt_object obj) {
+void optsummary(opt_object obj) {
 	int i;
 	printf("\n Return Value : %d \n",obj->retval);
 	printf("Method : %d %s \n",obj->Method,obj->MethodName);
@@ -167,6 +167,7 @@ int fminunc(custom_function *funcpt, custom_gradient *funcgrad, int N, double *x
 		 * Method 4 - Conjugate Gradient
 		 * Method 5 - BFGS
 		 * Method 6 - Limited Memory BFGS
+		 * Method 7 - BFGS More-Thuente Line Search
 		 */
 	/*
 	 * Return Codes
@@ -243,8 +244,19 @@ int fminunc(custom_function *funcpt, custom_gradient *funcgrad, int N, double *x
 		}
 		m = mvalue(N);
 		retval = bfgs_l_min(funcpt,funcgrad,xi,N,m,dx,fsval,maxstep,MAXITER,&niter,eps,gtol,ftol,xtol,xf);
-	} else {
-		printf("Method Value should be one of 0,1,2,3,4,5 or 6. See Documentation. \n");
+	}
+	else if (method == 7) {
+		gtol = pow(eps, 1.0 / 3.0);
+		ftol = gtol * gtol;
+		xtol = eps;
+		if (MAXITER < 1000) {
+			MAXITER = 1000;
+		}
+		m = mvalue(N);
+		retval = bfgs_min2(funcpt, funcgrad, xi, N, m, dx, fsval, maxstep, MAXITER, &niter, eps, gtol, ftol, xtol, xf);
+	}
+	else {
+		printf("Method Value should be one of 0,1,2,3,4,5,6 or 7. See Documentation. \n");
 		exit(1);
 	}
 
@@ -352,6 +364,7 @@ void optimize(opt_object obj, custom_function *funcpt, custom_gradient *funcgrad
 		 * Method 4 - Conjugate Gradient
 		 * Method 5 - BFGS
 		 * Method 6 - Limited Memory BFGS
+		 * Method 7 - BFGS More-Thuente Line Search
 		 */
 	/*
 	 * Return Codes
@@ -419,7 +432,14 @@ void optimize(opt_object obj, custom_function *funcpt, custom_gradient *funcgrad
 		m = mvalue(N);
 		obj->retval = bfgs_l_min(funcpt, funcgrad, xi, obj->N, m, dx, fsval, obj->maxstep, obj->MaxIter, &obj->Iter, obj->eps,
 				obj->gtol,obj->ftol,obj->xtol,obj->xopt);
-	} else {
+	}
+	else if (method == 7) {
+		strcpy(obj->MethodName, "BFGS More-Thuente Line Search");
+		m = mvalue(N);
+		obj->retval = bfgs_min2(funcpt, funcgrad, xi, obj->N, m, dx, fsval, obj->maxstep, obj->MaxIter, &obj->Iter, obj->eps,
+			obj->gtol, obj->ftol, obj->xtol, obj->xopt);
+	}
+	else {
 		strcpy(obj->MethodName,"NULL");
 		printf("Method Value should be one of 0,1,2,3,4,5 or 6. See Documentation. \n");
 		exit(1);

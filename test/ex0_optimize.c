@@ -27,9 +27,9 @@ int main(void) {
 
 	optim = opt_init(N);
 
-	for (j = 0; j < 7; ++j) {
+	for (j = 0; j < 8; ++j) {
 		optimize(optim, &froth_min, NULL, N, xi, j);
-		summary(optim);
+		optsummary(optim);
 		for (i = 0; i < N; ++i) {
 			xi[i] = 2;
 		}

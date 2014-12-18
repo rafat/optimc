@@ -104,7 +104,7 @@ struct custom_jacobian_set{
 
 void setnlsTOL(nls_object obj,double gtol,double ftol,double xtol);
 
-void summary(opt_object obj);
+void optsummary(opt_object obj);
 
 void setMaxIter(opt_object obj,int MaxIter);
 
